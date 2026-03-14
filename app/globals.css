@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #F9F8F5;
+  --bg-secondary: #F1EFE8;
+  --border: #D3D1C7;
+  --text-muted: #888780;
+  --text-primary: #444441;
+  --accent-young: #7F77DD;
+  --accent-senior: #1D9E75;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.font-heading {
+  font-family: 'Source Serif 4', serif;
+}
+
+.font-body {
+  font-family: 'DM Sans', sans-serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes celebrate {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-celebrate {
+  animation: celebrate 0.5s ease-out;
+}
