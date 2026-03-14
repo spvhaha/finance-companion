@@ -20,7 +20,7 @@ export default function Nav({ profileType }: { profileType: string }) {
       <div className="max-w-[540px] mx-auto flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
-          const hideOnMobile = item.href === '/ask' ? 'hidden sm:flex' : 'flex';
+          const hideOnMobile = 'flex';
           return (
             <Link
               key={item.href}
