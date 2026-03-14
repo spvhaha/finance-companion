@@ -20,11 +20,12 @@ export default function Nav({ profileType }: { profileType: string }) {
       <div className="max-w-[540px] mx-auto flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const hideOnMobile = item.href === '/ask' ? 'hidden sm:flex' : 'flex';
           return (
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-0.5 text-xs transition-colors"
+              className={`${hideOnMobile} flex-col items-center gap-0.5 text-xs transition-colors`}
               style={{ color: isActive ? accentColor : '#888780' }}
             >
               <span className="text-lg">{item.icon}</span>
