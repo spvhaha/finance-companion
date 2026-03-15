@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getProfile, saveAskHistory, getAskHistory } from '@/lib/db';
 
 export async function GET() {
@@ -19,25 +19,25 @@ export async function POST(req: NextRequest) {
     ? 'Growth Explorer — a beginner investor in their 20s-30s with a 30-40 year horizon, high risk tolerance, focused on learning and growing wealth'
     : 'Steady Protector — a pre-retirement investor in their 50s-60s with a 5-15 year horizon, low-moderate risk tolerance, focused on capital preservation and income';
 
+  const systemPrompt = `You are a warm, friendly financial well-wisher — like a wise older sibling who knows a lot about money. The user is a ${profileContext}. Keep answers simple, practical, under 200 words. Use everyday language, not jargon. Canadian financial context (TFSA, RRSP, CPP). Always note you're not a licensed financial advisor.`;
+
   try {
-    const client = new Anthropic();
-
-    const recentHistory = (await getAskHistory()).slice(0, 5).reverse();
-    const conversationMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-    for (const entry of recentHistory) {
-      conversationMessages.push({ role: 'user', content: entry.question });
-      conversationMessages.push({ role: 'assistant', content: entry.answer });
-    }
-    conversationMessages.push({ role: 'user', content: question });
-
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: `You are a warm, friendly financial well-wisher — like a wise older sibling who knows a lot about money. The user is a ${profileContext}. Keep answers simple, practical, under 200 words. Use everyday language, not jargon. Canadian financial context (TFSA, RRSP, CPP). Always note you're not a licensed financial advisor.`,
-      messages: conversationMessages,
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: systemPrompt,
     });
 
-    const answer = message.content[0].type === 'text' ? message.content[0].text : '';
+    const recentHistory = (await getAskHistory()).slice(0, 5).reverse();
+    const historyMessages = recentHistory.flatMap((entry) => [
+      { role: 'user' as const, parts: [{ text: entry.question }] },
+      { role: 'model' as const, parts: [{ text: entry.answer }] },
+    ]);
+
+    const chat = model.startChat({ history: historyMessages });
+    const result = await chat.sendMessage(question);
+    const answer = result.response.text();
+
     await saveAskHistory(question, answer);
 
     return NextResponse.json({ answer });
