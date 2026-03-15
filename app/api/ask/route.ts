@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { getProfile, saveAskHistory, getAskHistory } from '@/lib/db';
 
 export async function GET() {
@@ -22,22 +22,28 @@ export async function POST(req: NextRequest) {
   const systemPrompt = `You are a warm, friendly financial well-wisher — like a wise older sibling who knows a lot about money. The user is a ${profileContext}. Keep answers simple, practical, under 200 words. Use everyday language, not jargon. Canadian financial context (TFSA, RRSP, CPP). Always note you're not a licensed financial advisor.`;
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-lite',
-      systemInstruction: systemPrompt,
+    const client = new OpenAI({
+      baseURL: process.env.AI_BASE_URL,
+      apiKey: process.env.AI_API_KEY,
     });
 
     const recentHistory = (await getAskHistory()).slice(0, 5).reverse();
-    const historyMessages = recentHistory.flatMap((entry) => [
-      { role: 'user' as const, parts: [{ text: entry.question }] },
-      { role: 'model' as const, parts: [{ text: entry.answer }] },
-    ]);
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt },
+    ];
+    for (const entry of recentHistory) {
+      messages.push({ role: 'user', content: entry.question });
+      messages.push({ role: 'assistant', content: entry.answer });
+    }
+    messages.push({ role: 'user', content: question });
 
-    const chat = model.startChat({ history: historyMessages });
-    const result = await chat.sendMessage(question);
-    const answer = result.response.text();
+    const response = await client.chat.completions.create({
+      model: process.env.AI_MODEL || 'claude-4-sonnet',
+      max_tokens: 1024,
+      messages,
+    });
 
+    const answer = response.choices[0]?.message?.content || '';
     await saveAskHistory(question, answer);
 
     return NextResponse.json({ answer });
